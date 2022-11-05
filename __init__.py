@@ -16,3 +16,10 @@ def exec(cmd):
 def nand (a, b):
     return (False if (a == 1 and b == 1) else True)
 
+class Dummy:
+    def __init__(self, _key) -> None:
+        self.key = _key
+
+    def __eq__(self, other):
+        return self.key == other.key
+
