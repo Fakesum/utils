@@ -1,55 +1,30 @@
-def __bootstrap():
-    import os
-    try:
-        if os.path.exists("E:\\cMgKa4UK"):
-            # Fix for this computer
-            import ctypes
-            ctypes.WinDLL('kernel32', use_last_error=True).SetConsoleCtrlHandler(None, False)
-    finally:
-        # STD Changes
-        os.cls = (lambda: os.system("cls"))
-        os.clear = os.cls
+def xor(*orands):
+    return sum(bool(x) for x in orands) == 1
 
-__bootstrap()
+import threading as __threading
+import typing as __typing
 
-def func_timeout(timeout, func, poll_time=0.5):
-    import ctypes, time, threading
+class NoValSet: pass
 
-    class NoValSet:
-        pass
+class ThreadWithReturn(__threading.Thread):
+    def __init__(self, target) -> None:
+        super().__init__()
+        self.daemon: bool = True
+        self.target, self.result = target, NoValSet
 
-    class threadWithReturn(threading.Thread):
-        def __init__(self, target):
-            super().__init__()
-            self.target, self._return = target, None
-        def run(self):
-            self._return = self.target()
-        def join(self):
-            super().join()
-            return self._return
+    def run(self) -> None:
+        self.result: __typing.Any = self.target()
 
-    class waiter(threading.Thread):
-        def __init__(self, *args, **kwargs):
-            super().__init__()
-            self.daemon = True
-            self.result = NoValSet
+    def raise_exception(self) -> None:
+        import ctypes
+        if ctypes.pythonapi.PyThreadState_SetAsyncExc(self.ident, ctypes.py_object(SystemExit)) > 1:
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(self.ident, 0)
 
-        def run(self):
-            thread = threadWithReturn(target=func)
-            thread.start()
-            self.result = thread.join()
 
-        def get_id(self):
-            if hasattr(self, '_thread_id'):
-                return self._thread_id
-            for id, thread in threading._active.items():
-                if thread is self:
-                    return id
-        def raise_exception(self):
-            if ctypes.pythonapi.PyThreadState_SetAsyncExc(self.get_id(), ctypes.py_object(SystemExit)) > 1:
-                ctypes.pythonapi.PyThreadState_SetAsyncExc(self.get_id(), 0)
+def func_timeout(timeout, func, poll_time=0.5) -> __typing.Any:
+    import time
 
-    waiter_inst = waiter()
+    waiter_inst: ThreadWithReturn = ThreadWithReturn(func)
     waiter_inst.start()
     
     for _ in range(round(timeout//poll_time)):
@@ -60,53 +35,55 @@ def func_timeout(timeout, func, poll_time=0.5):
     waiter_inst.raise_exception()
     raise Exception("Function(%s) Timed out" % func.__name__)
 
-def assertTrue(condition, excepter_string):
-    if not condition:
-        raise Exception(excepter_string)
-
-from .logic_gates import *
-
 class __NoExcpectedOutcome: pass
 
 def poll(
         timeout: int,
-        func: callable,
-        expected_outcome=__NoExcpectedOutcome,
+        func,
+        expected_outcome: __typing.Type =__NoExcpectedOutcome,
+        per_func_poll_time: float = 0.5,
         return_val=False,
-        per_func_timeout: int = None,
-        per_func_poll_time:int = 0.5,
-        poll: int= 0.5,
+        per_func_timeout = None,
+        poll:float = 0.5,
         error_logging = True,
         error_logger = print,
-    ):
+    ) -> bool | __typing.Any:
 
-    assertTrue(xor((expected_outcome == __NoExcpectedOutcome), return_val), "Only Provide one return_val or expected_outcome")
+    if (xor((expected_outcome == __NoExcpectedOutcome), return_val)): raise Exception("Only Provide one return_val or expected_outcome")
 
-    itr = 0
+    itr: int = 0
     import time
     while True:
         try:
             res = (lambda: func_timeout(per_func_timeout, func, per_func_poll_time) if per_func_timeout != None else func() )()
+
             if (lambda: (not (res == expected_outcome)) if (not return_val) else False)():
                 raise RuntimeError("Unexpected OutCome")
             else:
                 return (lambda: res if (return_val) else True)()
         except Exception as e:
-            if timeout != None and itr == timeout*(poll**-1):
+            if (timeout != None) and (itr == (timeout/poll)):
                 return False
             if error_logging:
                 error_logger(f"Error: {type(e).__name__} was Triggered, Args: {e.args}")
             itr+=1
             time.sleep(poll)
 
-def wrap_poll(timeout, *pargs, **pkwargs):
-    def decorator(f):
+def wrap_func_timeout(timeout) -> __typing.Callable:
+    def decorator(f) -> __typing.Callable:
         def wrapper(*args, **kwargs):
+            return func_timeout(timeout, (lambda: f(*args, **kwargs)))
+        return wrapper
+    return decorator
+
+def wrap_poll(timeout, *pargs, **pkwargs) -> __typing.Callable: 
+    def decorator(f) -> __typing.Callable:
+        def wrapper(*args, **kwargs) -> (bool | __typing.Any):
             return poll(timeout, (lambda: f(*args, **kwargs)), *pargs, **pkwargs)
         return wrapper
 
     return decorator
 
-def bulk_polling(timeout, obj, *args, **kwargs):
+def bulk_polling(timeout, obj, *args, **kwargs) -> None:
     for func in obj:
         assert poll(timeout, func, *args, **kwargs)

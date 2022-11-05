@@ -1,8 +1,6 @@
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtWebEngineWidgets import *
-from PyQt5.QtPrintSupport import *
+from PyQt5.QtCore import QUrl
+from PyQt5.QtWidgets import QMainWindow, QStatusBar, QApplication
+from PyQt5.QtWebEngineWidgets import QWebEngineView
 
 def __find_free_port():
     import socket
@@ -29,7 +27,7 @@ class __MainWindow(QMainWindow):
         self.setStatusBar(self.status)
         self.show()
 
-def start_app_with_gui(flask_app, name="Gui"):
+def gui_begin(flask_app, name="Gui"):
     import threading
     threading.Thread(target=(lambda: flask_app.run(port=__port)), daemon=True).start()
 
