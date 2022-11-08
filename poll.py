@@ -98,37 +98,41 @@ def func_timeout(timeout: int | float, func: __typing.Callable, poll_time: float
         be specified by the error_logging argument.
 """
 def poll(
-        timeout: int | float | None,
+        timeout, # TODO: type hinting
         func: __typing.Callable,
         expected_outcome: __typing.Type =__NoValSet,
         per_func_poll_time: int | float = 0.5,
         return_val: bool=False,
         per_func_timeout: int | float | None = None,
-        poll:float | int | None= 0.5,
+        poll= 0.5, #TODO: type hinting
         error_logging: bool = True,
         error_logger: __typing.Callable = print,
     ) -> bool | __typing.Any:
 
+    # if the poll and timrout are specified check that the timeout is more than the poll
+    # time otherwise it will wait for more than the timeout allows for
     if (poll != None) and (timeout != None) and (timeout < poll): raise Exception("Timout Must be higher than poll")
+
+    # Check that only one of the expected_outcome or return_val is provided
     if (__xor((expected_outcome == __NoValSet), return_val)): raise Exception("Only Provide one return_val or expected_outcome")
 
-    itr: int = 0
-    import time
-    while True:
+    """
+    if timeout is None run forever, else if poll is None then run for timeout, if both
+    are given the run for timeout//poll
+    """
+    import time, itertools
+    for _ in ((range(timeout//poll) if (poll != None) else range(timeout)) if (timeout != None) else (itertools.count(start=1))):
         try:
-            res = __timeit((lambda: func_timeout(per_func_timeout, func, per_func_poll_time) if per_func_timeout != None else func()))()
-            timeout = ((timeout - res[1]) if (timeout != None) else None)
+            # Run the function as specified
+            res = (func_timeout(per_func_timeout, func, per_func_poll_time) if per_func_timeout != None else func())
 
-            if (lambda: (not (res[0] == expected_outcome)) if (not return_val) else False)():
+            if (lambda: (not (res == expected_outcome)) if (not return_val) else False)():
                 raise RuntimeError("Unexpected OutCome")
             else:
-                return (res[0] if (return_val) else True)
+                return (res if (return_val) else True)
         except Exception as e:
-            if (timeout != None) and (itr == (timeout/poll if poll != None else timeout)):
-                return False
             if error_logging:
                 error_logger(f"Error: {type(e).__name__} was Triggered, Args: {e.args}")
-            itr+=1
             (time.sleep(poll) if poll != None else None)
 
 def wrap_func_timeout(timeout) -> __typing.Callable:
