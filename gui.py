@@ -22,6 +22,7 @@ class __MainWindow(__QMainWindow):
     def __init__(self, port, *args, **kwargs):
         super(type(self), self).__init__(*args, **kwargs)
         self.browser = self.QWebEngineView()
+        print("A")
 
         self.browser.setUrl(self.QUrl(f"http://localhost:"+str(port)))
 
