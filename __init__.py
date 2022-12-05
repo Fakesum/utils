@@ -1,4 +1,5 @@
 from .poll import *
+from .gui import *
 import typing as __typing
 
 # Time the executing of a function
