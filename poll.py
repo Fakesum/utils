@@ -92,7 +92,8 @@ def func_timeout(timeout: int | float, func: __typing.Callable, poll_time: float
 def poll(
         timeout: int | float | None, 
         func: __typing.Callable,
-        expected_outcome: __typing.Type =__NoValSet,
+        expected_outcome: __typing.Type | __typing.Any=__NoValSet,
+        validity_determiner: __typing.Type | __typing.Callable = __NoValSet,
         per_func_poll_time: int | float = 0.5,
         return_val: bool=False,
         per_func_timeout: int | float | None = None,
@@ -102,7 +103,7 @@ def poll(
         true_timing: bool=False,
         fast: bool = False,
         generator: bool = False,
-        on_failer: __typing.Callable=(lambda: __NoValSet)
+        on_failer: __typing.Callable | __typing.Type = __NoValSet
     ) -> bool | __typing.Any:
     """This function does too many things to explain, Just understand that this is
         By far the best method of adding reliability and speed to the code. specially
@@ -112,7 +113,12 @@ def poll(
     Args:
         timeout (int | float | None): The Timeout of the function
         func (__typing.Callable): The function that is to be repeated
-        expected_outcome (__typing.Type, optional): the expected outcome if there is one. Defaults to __NoValSet.
+        expected_outcome (__typing.Type | __typing.Any, optional): the expected outcome if there is one. Defaults to __NoValSet.
+
+        validity_determiner(__typing.Type | __typing.Callable, optional): funciton, if specified the output of the given function will be run 
+        throw the validity function specified in order to verify that the result was valid. The validity function must return either True or False 
+        for  valid and invalid result respectivly.
+
         per_func_poll_time (int | float, optional): if per_func_timeout is set then this will check on if the function has
                                                     completed every this many seconds. Defaults to 0.5.
         return_val (bool, optional): if this is set then the function will return the result of the function. Defaults to 
@@ -151,7 +157,7 @@ def poll(
         if (poll != None) and (timeout != None) and (timeout < poll): raise SyntaxError("Timout Must be higher than poll")
 
         # Check that only one of the expected_outcome or return_val is provided
-        if (__xor((expected_outcome == __NoValSet), return_val)): raise SyntaxError("Only Provide one return_val or expected_outcome")
+        if not (__xor((expected_outcome != __NoValSet), return_val, (validity_determiner != __NoValSet))): raise SyntaxError("Only Provide one return_val or expected_outcome or validity_determiner")
         
         # The True timing and pre_func_timeout cannot be given at once
         if (true_timing and (timeout == None)): raise SyntaxError("The Timeout cannot be None when true_timing is specified")
@@ -171,10 +177,10 @@ def poll(
             
             timeout = (timeout if not true_timing else timeout - res[1])
 
-            if ((not ((res[0] if true_timing else res) == expected_outcome)) if (not return_val) else False):
+            if ((((res[0] if true_timing else res) != expected_outcome)) if (validity_determiner == __NoValSet) else (validity_determiner(res[0] if true_timing else res) != True)) if (not return_val) else False:
                 raise RuntimeError("Unexpected OutCome")
             else:
-                return ((res[0] if true_timing else res) if (return_val) else True)
+                return ((res[0] if true_timing else res) if (return_val or validity_determiner != __NoValSet) else True)
         except FuncTimeout as e:
             if error_logging:
                 error_logger(f"Error: {type(e).__name__} was Triggered, Args: {e.args}")
@@ -198,7 +204,21 @@ def wrap_func_timeout(timeout) -> __typing.Callable:
         return wrapper
     return decorator
 
-def wrap_poll(timeout: int | float | None, *pargs, **pkwargs) -> __typing.Callable: 
+def wrap_poll(
+        timeout: int | float | None, 
+        expected_outcome: __typing.Type | __typing.Any=__NoValSet,
+        validity_determiner: __typing.Type | __typing.Callable = __NoValSet,
+        per_func_poll_time: int | float = 0.5,
+        return_val: bool=False,
+        per_func_timeout: int | float | None = None,
+        _poll: int | float | None= 0.5,
+        error_logging: bool = True,
+        error_logger: __typing.Callable = print,
+        true_timing: bool=False,
+        fast: bool = False,
+        generator: bool = False,
+        on_failer: __typing.Callable | __typing.Type = __NoValSet
+    ) -> __typing.Callable: 
     """This function does too many things to explain, Just understand that this is
         By far the best method of adding reliability and speed to the code. specially
         for selenium for which this was created. use @wrap_poll decorator if you want
@@ -207,7 +227,12 @@ def wrap_poll(timeout: int | float | None, *pargs, **pkwargs) -> __typing.Callab
     Args:
         timeout (int | float | None): The Timeout of the function
         func (__typing.Callable): The function that is to be repeated
-        expected_outcome (__typing.Type, optional): the expected outcome if there is one. Defaults to __NoValSet.
+        expected_outcome (__typing.Type | __typing.Any, optional): the expected outcome if there is one. Defaults to __NoValSet.
+
+        validity_determiner(__typing.Type | __typing.Callable, optional): funciton, if specified the output of the given function will be run 
+        throw the validity function specified in order to verify that the result was valid. The validity function must return either True or False 
+        for  valid and invalid result respectivly.
+
         per_func_poll_time (int | float, optional): if per_func_timeout is set then this will check on if the function has
                                                     completed every this many seconds. Defaults to 0.5.
         return_val (bool, optional): if this is set then the function will return the result of the function. Defaults to 
@@ -228,6 +253,7 @@ def wrap_poll(timeout: int | float | None, *pargs, **pkwargs) -> __typing.Callab
         generator (bool, optional): if the passed function yields then it might be a good idea to pass this argument as True
                                     since it pre-gens the function and checks for Exceptions before returning the returned val
                                     Defaults to False.
+        on_failer (__typing.Callbale): If defined, it runs when the function incounters a problem. Defaults to (lambda: __NoValSet)
 
     Raises:
         SyntaxError: Timout Must be higher than poll
@@ -240,9 +266,23 @@ def wrap_poll(timeout: int | float | None, *pargs, **pkwargs) -> __typing.Callab
     """
     def decorator(f) -> __typing.Callable:
         def wrapper(*args, **kwargs) -> (bool | __typing.Any):
-            return poll(timeout, (lambda: f(*args, **kwargs)), *pargs, **pkwargs)
+            return poll(
+                timeout,
+                (lambda: f(*args, **kwargs)),
+                expected_outcome,
+                validity_determiner,
+                per_func_poll_time,
+                return_val,
+                per_func_timeout,
+                _poll,
+                error_logging,
+                error_logger,
+                true_timing,
+                fast, 
+                generator, 
+                on_failer
+            ) # Manully funling arguments.
         return wrapper
-
     return decorator
 
 def bulk_polling(timeout, obj, *args, **kwargs) -> None:
