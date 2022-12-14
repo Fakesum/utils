@@ -1,6 +1,7 @@
 from .poll import *
 from .gui import *
 from .datatypes import *
+from . import settings
 
 import typing as __typing
 
