@@ -12,7 +12,7 @@ def timeit(f) -> __typing.Callable:
     def wrapper(*args, **kwargs) -> tuple[__typing.Any, float]:
         import time
         st: float = time.time()
-        return (f(*args, **kwargs), time.time() - st)
+        return (f(*args, **kwargs), round(time.time() - st, 2))
     return wrapper
 
 # Get the commandline output of the given command
