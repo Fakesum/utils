@@ -2,22 +2,22 @@ import sys
 
 def __botloader() -> dict:
     import toml
-    template = toml.load(".config.template")
-    config = toml.load("config.toml")
+    _template = toml.load(".config.template")
+    _config = toml.load("config.toml")
 
-    def validate(keys):
+    def validate(config, template, keys):
         for key in keys:
-            if type(key) == dict:
-                validate(key)
-            try:
-                config[key]
-            except KeyError:
+            if type(config[key]) == dict:
+                validate(config[key], template[key], template[key].keys())
+
+            if not (key in config):
                 if "optional" in template[key] and template[key]["optional"] == True:
                     if "default" in template[key]:
                         config[key] = template[key]["default"]
                     continue
                 else:
-                    raise RuntimeError("non-optional key ", key, " not in config.toml")
+                    raise RuntimeError(f"non-optional key {key} not in config.toml")
+            
             if "type" in template[key]:
                 if not (type(config[key]) == eval(template[key]["type"])):
                     raise RuntimeError(f"""{key} in config.toml should be of type: {template[key]["type"]}""")
@@ -25,9 +25,8 @@ def __botloader() -> dict:
             if "range" in template[key]:
                 if not (template[key]["range"][1] >= config[key] >= template[key]["range"][0]):
                     raise RuntimeError(f"""{key} in config.toml should be between range {template[key]["range"][0]} - {template[key]["range"][1]}""")
-            
-    validate(template.keys())
-    return config
+        return config
+    return validate(_config, _template, _template.keys())
 
 try:
     sys.modules[__name__] = __botloader()
