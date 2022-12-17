@@ -18,3 +18,11 @@ class RoundTable(list):
                 return nlist
         else:
             return self[self.prev:num+self.prev]
+
+class DryLogger:
+    import inspect
+    def __init__(self, logger=print) -> None:
+        self.logger = logger
+    
+    def speak(self, _format="{}"):
+        self.logger(_format.format(open(str(self.inspect.stack()[1][0]).split(",")[1].split("'")[1], "r").readlines()[self.inspect.stack()[1][0].f_lineno].split("\t")[-1]).split("\n")[0].split("  ")[-1])
