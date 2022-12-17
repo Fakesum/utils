@@ -7,16 +7,16 @@ def __botloader() -> dict:
 
     def validate(config, template, keys):
         for key in keys:
-            if type(config[key]) == dict:
-                validate(config[key], template[key], template[key].keys())
-
             if not (key in config):
-                if "optional" in template[key] and template[key]["optional"] == True:
+                if ("optional" in template[key]) and (template[key]["optional"] == True):
                     if "default" in template[key]:
                         config[key] = template[key]["default"]
                     continue
                 else:
                     raise RuntimeError(f"non-optional key {key} not in config.toml")
+
+            if type(config[key]) == dict:
+                validate(config[key], template[key], template[key].keys())
             
             if "type" in template[key]:
                 if not (type(config[key]) == eval(template[key]["type"])):
