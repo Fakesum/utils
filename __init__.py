@@ -23,6 +23,12 @@ def exec_cmd(cmd) -> tuple[str, str]:
     out, err = str(out), str(err)
     return (out, err)
 
+def ignore_error(f):
+    try:
+        f()
+    except:
+        pass
+
 # XOR Gate:
 # 1 1 -> 0
 # 0 1 -> 1
