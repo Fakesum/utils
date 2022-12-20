@@ -31,4 +31,4 @@ def __botloader() -> dict:
 try:
     sys.modules[__name__] = __botloader()
 except FileNotFoundError:
-    raise RuntimeError(".config.template and config.toml do not exsit")
+    raise RuntimeError(".config.template and/or config.toml do not exists")
