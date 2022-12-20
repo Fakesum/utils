@@ -101,3 +101,11 @@ def find_free_port():
         s.bind(('', 0))
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         return s.getsockname()[1]
+
+# Get a SPeaker Function that just logs out the next
+# Line from where it is called
+def get_speaker(logger, _format):
+    import inspect
+    def speak():
+        logger(_format.format(open(str(inspect.stack()[1][0]).split(",")[1].split("'")[1], "r").readlines()[inspect.stack()[1][0].f_lineno].split("\t")[-1]).split("\n")[0].split("  ")[-1])
+    return speak
