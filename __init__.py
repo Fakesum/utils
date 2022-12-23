@@ -93,7 +93,7 @@ def compare(a: str,b: str) -> float:
     return res
 
 # find a free port
-def find_free_port():
+def find_free_port() -> int:
     import socket
     from contextlib import closing
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
