@@ -1,0 +1,4 @@
+[submodule "settings"]
+	path = settings
+	url = git@github.com:Fakesum/toml-settings.git
+	branch = main

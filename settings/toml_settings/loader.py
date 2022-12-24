@@ -1,9 +1,16 @@
 def loader(template_name = ".config.template", config_name ="config.toml") -> dict:
-    import toml
-    _template = toml.load(template_name)
-    _config = toml.load(config_name)
+    import toml, typing
+    try:
+        _template: dict[str, typing.Any] = toml.load(template_name)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Template file: {template_name}, Not Found")
 
-    def validate(config, template, keys):
+    try:
+        _config: dict[str, typing.Any] = toml.load(config_name)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Config file: {config_name}, Not Found")
+
+    def validate(config, template, keys) -> dict[str, typing.Any]:
         for key in keys:
             if not (key in config):
                 if ("optional" in template[key]) and (template[key]["optional"] == True):
