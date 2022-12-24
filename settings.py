@@ -1,5 +1,5 @@
 # Legecy
-from .tomlsettings.toml_settings.loader import loader
+import .tomlsettings.loader as loader
 import sys
 
 sys.modules[__name__] = loader()
