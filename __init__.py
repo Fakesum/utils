@@ -1,5 +1,4 @@
 from .poll import *
-from .gui import *
 from .datatypes import *
 
 import typing as __typing
