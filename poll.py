@@ -1,1 +1,1 @@
-from polling_station import *
+from .polling_station import *
