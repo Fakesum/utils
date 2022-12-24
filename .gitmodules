@@ -2,3 +2,8 @@
 	path = settings
 	url = git@github.com:Fakesum/toml-settings.git
 	branch = main
+
+[submodule "polling-station"]
+	path = polling-station
+	url = git@github.com:Fakesum/polling-station.git
+	branch = main
