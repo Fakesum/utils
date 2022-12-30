@@ -7,3 +7,8 @@
 	path = tomlsettings
 	url = git@github.com:Fakesum/toml-settings.git
 	branch = main
+
+[submodule "gui"]
+	path = gui
+	url = git@github.com:Fakesum/flask2gui.git
+	branch = main
