@@ -12,3 +12,8 @@
 	path = gui
 	url = git@github.com:Fakesum/flask2gui.git
 	branch = main
+
+[submodule "uc_spider"]
+	path = uc_spider
+	url = git@github.com:Fakesum/uc_spider.git
+	branch = main
